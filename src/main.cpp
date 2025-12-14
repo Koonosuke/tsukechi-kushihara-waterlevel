@@ -12,7 +12,7 @@ HardwareSerial MySerial1(1);
 
 const int SWITCH_PIN = 2; // Xiao C3のGPIO2ピンを使用
 RTC_DATA_ATTR int counter = 0;  //RTC coprocessor領域に変数を宣言することでスリープ復帰後も値が保持できる
-const uint64_t  SLEEPTIME_SECONDS = 900; //秒(3600→1時間)
+const uint64_t  SLEEPTIME_SECONDS = 900;
 int PORTLATE = 57600;
 int BIGTIMEOUT = 10000;
 int POSTTIMEOUT = 60000;
@@ -20,7 +20,6 @@ int NORMALTIMEOUT = 5000;
 int SMALLTIMEOUT = 1000;
 
 unsigned char data[4] = {};
-
 
 int count = 0;
 float distance = -1;
@@ -149,7 +148,7 @@ void serial_send(float distance)
         //delay(1000);
 
         // ------- Funnel→AWS IoT ルール用のJSONペイロード -------
-String fieldId = "Yokosuka-A1";     // 設置場所など任意
+String fieldId = "Yanamaka-A";     // 設置場所など任意
 unsigned long ts = millis();        // 端末時刻を使うなら IoTルール側で ${ts} を指定
 
 String payload = String("{\"distance\":") + String(distance, 2) +
@@ -257,6 +256,3 @@ void loop() {
     esp32c3_deepsleep(SLEEPTIME_SECONDS);  //スリープタイム スリープ中にGPIO2がHIGHになったら目覚める
     }
 }
-
-
-
