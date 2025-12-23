@@ -15,7 +15,8 @@ flowchart TB
   user[利用者/外部ブラウザ]
   cf_public[CloudFront static.mycalinks.io\n(prodのみ)]
   s3_public[S3 公開コンテンツ]
-  user -->|静的配信| cf_public --> s3_public
+  user -->|静的配信| cf_public
+  cf_public --> s3_public
 
   user -->|HTTPS| waf[WAF\n(pos-web-app)]
   waf --> alb[ALB (Copilot)]
@@ -25,20 +26,30 @@ flowchart TB
     alb --> ecweb[ec-web-app\nECS Fargate + nginx]
     backend[backend-outbox\nBackend Service]
     pos --> cache[ElastiCache Serverless (Valkey)]
-    pos --> cf_private[CloudFront private-static\n(stg/prod)] --> s3_private[S3 プライベートバケット]
-    pos --> dbproxy[RDS Proxy] --> aurora[Aurora MySQL\n(stg/prod)]
+    pos --> cf_private[CloudFront private-static\n(stg/prod)]
+    cf_private --> s3_private[S3 プライベートバケット]
+    pos --> dbproxy[RDS Proxy]
+    dbproxy --> aurora[Aurora MySQL\n(stg/prod)]
     pos --> dynamo[DynamoDB\nEc_Product/Ec_Order/Outbox_Ec_Order]
 
-    pos --> sns_pos[SNS FIFO topics\nitem/product/transaction/\nec-order/outbox/notification]
-    sns_pos --> sqs_item[SQS -> worker-item] --> wi[worker-item]
-    sns_pos --> sqs_product[SQS -> worker-product] --> wp[worker-product]
-    sns_pos --> sqs_tx[SQS -> worker-transaction] --> wt[worker-transaction]
-    sns_pos --> sqs_ecorder[SQS -> worker-ec-order] --> wec[worker-ec-order]
-    sns_pos --> sqs_notif[SQS -> worker-notification] --> wn[worker-notification]
+    pos --> sns_pos[SNS FIFO topics\nitem/product/transaction/ec-order/outbox/notification]
+    sns_pos --> sqs_item[SQS -> worker-item]
+    sqs_item --> wi[worker-item]
+    sns_pos --> sqs_product[SQS -> worker-product]
+    sqs_product --> wp[worker-product]
+    sns_pos --> sqs_tx[SQS -> worker-transaction]
+    sqs_tx --> wt[worker-transaction]
+    sns_pos --> sqs_ecorder[SQS -> worker-ec-order]
+    sqs_ecorder --> wec[worker-ec-order]
+    sns_pos --> sqs_notif[SQS -> worker-notification]
+    sqs_notif --> wn[worker-notification]
 
-    backend --> sns_ext[SNS external-ec] --> sqs_ext[SQS -> worker-external-ec] --> wext[worker-external-ec]
+    backend --> sns_ext[SNS external-ec]
+    sns_ext --> sqs_ext[SQS -> worker-external-ec]
+    sqs_ext --> wext[worker-external-ec]
 
-    evb[EventBridge Schedules\n(stg/prod)] --> sqs_sched[SQS (worker-scheduled queue)] --> wsched[worker-scheduled]
+    evb[EventBridge Schedules\n(stg/prod)] --> sqs_sched[SQS (worker-scheduled queue)]
+    sqs_sched --> wsched[worker-scheduled]
 
     jobs[Scheduled Jobs\njob-daily-calculate\njob-ensure-consistency\njob-temporary-task] --> fargate_tasks[Fargate 実行\n( cron/手動 )]
 
